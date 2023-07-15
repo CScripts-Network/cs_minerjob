@@ -9,7 +9,8 @@ For all support questions, ask in our [Discord](https://discord.gg/2kcXW3gRzg) s
 - [QBCore](https://github.com/qbcore-framework/qb-core) or [ESX](https://github.com/esx-framework/esx_core)
 - [oxmysql](https://github.com/overextended/oxmysql)
 - [PolyZone](https://github.com/mkafrin/PolyZone)
-
+- [cs_lib](https://github.com/CScripts-Network/cs_lib)
+  
 # Installation
 * Download ZIP
 * Drag and drop resource into your server files

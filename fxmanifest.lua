@@ -19,3 +19,7 @@ client_scripts({
 	'client/main.lua',
 	'config/translations.lua',
 })
+
+dependencies {
+	'cs_lib'
+}

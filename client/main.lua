@@ -10,8 +10,6 @@ local geeky
 local PropsBlips = {}
 local ClothesOn = false
 local blip
-local QBCore = nil
-local ESX = nil
 local blipSY
 local Player
 local isSpawned = false
@@ -20,16 +18,11 @@ local Zone = CircleZone:Create(vector2(2944.70, 2775.38), 77.19, {
     name="miner",
 })   
 
-if GetFrameWork() == 'ESX' then
+local Core = exports['cs_lib']:GetLib()
+
 Citizen.CreateThread(function()
-    while ESX == nil do
-        TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
-        Citizen.Wait(0)
-    end
+    while not Core.FrameworkIsReady() do Wait(1000); end
 end)
-elseif GetFrameWork() == 'QBCORE' then
-    QBCore = exports['qb-core']:GetCoreObject()
-end
 
 Citizen.CreateThread(function()
 	SpawnStartingPed()
@@ -52,9 +45,7 @@ CreateThread(function()
 		Citizen.Wait(1000)
         if not Config.Jobs then
             HasJob = true
-        elseif GetFrameWork() == "ESX" and ESX.GetPlayerData().job.name == Config.Jobs then
-            HasJob = true
-        elseif GetFrameWork() == "QBCORE" and QBCore.Functions.GetPlayerData().job.name == Config.Jobs then
+        elseif Core.GetJob then
             HasJob = true
         else
             HasJob = false
@@ -72,8 +63,8 @@ CreateThread(function()
             NumberToDo = JobsToDo-POINTS_DONE_IN_JOB
 
             if POINTS_DONE_IN_JOB == JobsToDo and not SendedInfo then
-                Notify(Config.Languages[Config.Lang]["JOB_DONE_COME_BACK"])
-                SetNewWaypoint(Config.Job.StartJob.Coords.x, Config.Job.StartJob.Coords.y)
+                Core.Notification(Config.Languages[Config.Lang]["JOB_DONE_COME_BACK"])
+                Core.WayPoint(Config.Job.StartJob.Coords.x, Config.Job.StartJob.Coords.y)
                 SendedInfo = true
             end
 
@@ -91,7 +82,7 @@ CreateThread(function()
                         SetNewWaypoint(Config.Job.BlipOfMinerSite.Coords.x, Config.Job.BlipOfMinerSite.Coords.y);
                         DeleteWaypoint();
                         if NumberToDo == 0 then
-                            Notify(Config.Languages[Config.Lang]["YOU_EARNED"]..''..tonumber(JobsToDo)*tonumber(Config.JobWork[SetRandomLocation].PayForOneRock))
+                            Core.Notification(Config.Languages[Config.Lang]["YOU_EARNED"]..''..tonumber(JobsToDo)*tonumber(Config.JobWork[SetRandomLocation].PayForOneRock))
                             TriggerServerEvent("d_gardencleaner:givemoney", JobsToDo, SetRandomLocation)
                         end
                         HasJobStarted = false
@@ -128,7 +119,7 @@ CreateThread(function()
             local coord = GetEntityCoords(plyPed)
             insidePinkCage = Zone:isPointInside(coord)
                 if insidePinkCage and not isSpawned then
-                        Notify(Config.Languages[Config.Lang]["HOW_TO_START"])
+                        Core.Notification(Config.Languages[Config.Lang]["HOW_TO_START"])
                         CarParked = true
                         SpawnSmallRocks()
                         SpawnBigRocks()
@@ -157,10 +148,10 @@ AddEventHandler('d_minerjob:startjob', function()
         elseif not HasJobStarted then
             HasJobStarted = true
             local RandomLocal = math.random(1,#Config.JobWork)
-            SpawnCar()
+            Core.SpawnCar(Config.JobCar, Config.Job.CarControl.Coords, Config.Job.CarControl.heading)
             SetNewWaypoint(Config.Job.BlipOfMinerSite.Coords.x, Config.Job.BlipOfMinerSite.Coords.y);
             SetRandomLocation = RandomLocal
-            Notify('Go to the mining zone!')
+            Core.Notification('Go to the mining zone!')
             local Blip_Name = 'Mining Zone'
             blipSY = AddBlipForCoord(Config.Job.BlipOfMinerSite.Coords.x, Config.Job.BlipOfMinerSite.Coords.y, Config.Job.BlipOfMinerSite.Coords.z)
             SetBlipSprite(blipSY, Config.Job.BlipOfMinerSite.SetBlipSprite)
@@ -172,7 +163,7 @@ AddEventHandler('d_minerjob:startjob', function()
             AddTextComponentString(Blip_Name)
             EndTextCommandSetBlipName(blipSY)
         else
-            Notify(Config.Languages[Config.Lang]["DONT_START_AGAIN"])
+            Core.Notification(Config.Languages[Config.Lang]["DONT_START_AGAIN"])
         end
 end)
 
@@ -239,7 +230,7 @@ RegisterNetEvent('d_minerjob:smallrock')
 AddEventHandler('d_minerjob:smallrock', function(data)
     HaveJob = true
     ClearPedTasks(GetPlayerPed(-1))
-    local model = loadModel(GetHashKey('prop_tool_pickaxe'))
+    local model = Core.loadModel(GetHashKey('prop_tool_pickaxe'))
     geeky = CreateObject(model, GetEntityCoords(GetPlayerPed(-1)), false, false, false)
     AttachEntityToEntity(geeky, GetPlayerPed(-1), GetPedBoneIndex(GetPlayerPed(-1), 57005), 0.09, 0.03, -0.02, -78.0, 13.0, 28.0, false, true, true, true, 0, true)
     FreezeEntityPosition(GetPlayerPed(-1), true)
@@ -256,7 +247,7 @@ AddEventHandler('d_minerjob:smallrock', function(data)
     DeleteEntity(data.entity)
     ClearPedTasks(GetPlayerPed(-1))
     POINTS_DONE_IN_JOB = POINTS_DONE_IN_JOB+1
-    Notify(Config.Languages[Config.Lang]["DONE"]..""..POINTS_DONE_IN_JOB.."/"..JobsToDo)
+    Core.Notification(Config.Languages[Config.Lang]["DONE"]..""..POINTS_DONE_IN_JOB.."/"..JobsToDo)
     RemoveBlip(PropsBlips[data.entity])
     HaveJob = false
 end)
@@ -265,7 +256,7 @@ RegisterNetEvent('d_minerjob:bigrock')
 AddEventHandler('d_minerjob:bigrock', function(data)
     HaveJob = true
     ClearPedTasks(GetPlayerPed(-1))
-    local model = loadModel(GetHashKey('prop_tool_pickaxe'))
+    local model = Core.loadModel(GetHashKey('prop_tool_pickaxe'))
     geeky = CreateObject(model, GetEntityCoords(GetPlayerPed(-1)), false, false, false)
     AttachEntityToEntity(geeky, GetPlayerPed(-1), GetPedBoneIndex(GetPlayerPed(-1), 57005), 0.09, 0.03, -0.02, -78.0, 13.0, 28.0, false, true, true, true, 0, true)
     FreezeEntityPosition(GetPlayerPed(-1), true)
@@ -282,7 +273,7 @@ AddEventHandler('d_minerjob:bigrock', function(data)
     DeleteEntity(data.entity)
     ClearPedTasks(GetPlayerPed(-1))
     POINTS_DONE_IN_JOB = POINTS_DONE_IN_JOB+1
-    Notify(Config.Languages[Config.Lang]["DONE"]..""..POINTS_DONE_IN_JOB.."/"..JobsToDo)
+    Core.Notification(Config.Languages[Config.Lang]["DONE"]..""..POINTS_DONE_IN_JOB.."/"..JobsToDo)
     RemoveBlip(PropsBlips[data.entity])
     HaveJob = false
 end)
@@ -351,40 +342,6 @@ function SpawnStartingPed()
             },
             distance = 2.5
         })
-    end
-end
-
-function SpawnCar()
-    if GetFrameWork() == 'ESX' then
-	    ESX.Game.SpawnVehicle(Config.JobCar, Config.Job.CarControl.Coords, Config.Job.CarControl.heading, function(callback_vehicle)
-		    SetVehicleFixed(callback_vehicle)
-		    SetVehicleDeformationFixed(callback_vehicle)
-		    SetVehicleEngineOn(callback_vehicle, true, true)
-		    SetCarFuel(callback_vehicle)
-		    TaskWarpPedIntoVehicle(GetPlayerPed(-1), callback_vehicle, -1)
-	    end)
-    elseif GetFrameWork() == 'QBCORE' and not Config.FixCarSpawnQB then
-        QBCore.Functions.TriggerCallback('QBCore:Server:SpawnVehicle', function(netId)
-            local veh = NetToVeh(netId)
-            SetEntityHeading(veh, Config.Job.CarControl.heading)
-		    SetVehicleFixed(veh)
-		    SetVehicleDeformationFixed(veh)
-		    SetVehicleEngineOn(veh, true, true)
-		    SetCarFuel(veh)
-		    TaskWarpPedIntoVehicle(GetPlayerPed(-1), veh, -1)
-            TriggerEvent("vehiclekeys:client:SetOwner", QBCore.Functions.GetPlate(veh))
-        end, Config.JobCar, Config.Job.CarControl.Coords, true)
-    elseif GetFrameWork() == 'QBCORE' and Config.FixCarSpawnQB then
-        QBCore.Functions.SpawnVehicle(Config.JobCar, function(veh)
-            SetEntityHeading(veh, Config.Job.CarControl.heading)
-		    SetVehicleFixed(veh)
-		    SetVehicleDeformationFixed(veh)
-		    SetVehicleEngineOn(veh, true, true)
-            SetCarFuel(veh)
-            TaskWarpPedIntoVehicle(GetPlayerPed(-1), veh, -1)
-            TriggerEvent("vehiclekeys:client:SetOwner", QBCore.Functions.GetPlate(veh))
-            SetVehicleEngineOn(veh, true, true)
-        end, Config.Job.CarControl.Coords, true)    
     end
 end
 
@@ -490,39 +447,16 @@ end
 
 function ChangeClothes(type) 
     if type == "work" then
-        local gender
-        if GetFrameWork() == 'ESX' then
-        TriggerEvent('skinchanger:getSkin', function(skin)
-            gender = skin.sex
-        end)
-        elseif GetFrameWork() == 'QBCORE' then
-            local Player = QBCore.Functions.GetPlayerData()
-            gender = Player.charinfo.gender
-        end
+        local gender = Core.GetGender()
         local PlayerPed = PlayerPedId()
         ClothesOn = true
         if gender == 0 then
-            for k,v in pairs(Config.Clothes.male.components) do
-                SetPedComponentVariation(PlayerPed, v["component_id"], v["drawable"], v["texture"], 0)
-            end
+            Core.SetClothes(Config.Clothes.male.components)
         else
-            for k,v in pairs(Config.Clothes.female.components) do
-                SetPedComponentVariation(PlayerPed, v["component_id"], v["drawable"], v["texture"], 0)
-            end
-        end
+            Core.SetClothes(Config.Clothes.female.components)
+        end        
     else       
-        ClothesOn = false 
-        if GetFrameWork() == 'ESX' then
-            ESX.TriggerServerCallback('esx_skin:getPlayerSkin', function(skin)
-                TriggerEvent('skinchanger:loadSkin', skin)
-            end)
-        elseif GetFrameWork() == 'QBCORE' then
-            TriggerServerEvent('qb-clothes:loadPlayerSkin')
-        end
+        ClothesOn = false
+        Core.SetDefaultClothes()
     end
-end
-
-loadModel = function(model)
-    while not HasModelLoaded(model) do Wait(0) RequestModel(model) end
-    return model
 end

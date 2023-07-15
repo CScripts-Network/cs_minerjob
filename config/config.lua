@@ -1,9 +1,7 @@
 Config = {}
 
 Config.Lang = 'en'
-Config.FrameWork = 'QBCORE' -- Only supports ESX and QBCORE
 Config.Jobs = false -- Put false for no job lock
-Config.FixCarSpawnQB = false -- Set this to true if car is not spawning
 Config.SpawnBack = true -- Spawns player next to the ped when gives back the car
 
 --- Vehicle ---
@@ -76,33 +74,3 @@ Config.JobWork = {
         },
     },
 }
-
---- FUNCTIONS ---
-function GetFrameWork()
-    return Config.FrameWork
-end
-
-local QBCore = nil
-local ESX = nil
-if GetFrameWork() == 'ESX' then
-    Citizen.CreateThread(function()
-        while ESX == nil do
-            TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
-            Citizen.Wait(0)
-        end
-    end)
-elseif GetFrameWork() == 'QBCORE' then
-    QBCore = exports['qb-core']:GetCoreObject()
-end
-function SetCarFuel(callback_vehicle)
-    if Config.UsingFuel then
-        exports['LegacyFuel']:SetFuel(callback_vehicle, '100')
-    end
-end
-function Notify(message)
-    if GetFrameWork() == 'ESX' then
-        ESX.ShowNotification(message, false, false, w)
-    elseif GetFrameWork() == 'QBCORE' then
-        QBCore.Functions.Notify(message, "primary")
-    end
-end
